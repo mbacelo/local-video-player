@@ -230,6 +230,32 @@ main { padding: 24px; }
 .empty-fine { font-size: 12.5px; }
 .no-results { color: var(--text-dim); text-align: center; padding: 40px; }
 
+.watched-section { margin-top: 28px; border-top: 1px solid var(--border); padding-top: 16px; }
+
+.section-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 16px;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--text-dim);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.section-toggle:hover { color: var(--text); }
+.section-caret { font-size: 11px; width: 12px; }
+.section-title { font-size: 14px; font-weight: 600; letter-spacing: 0.02em; }
+.section-count {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #1c1c1c;
+  font-size: 12px;
+}
+
 /* ----------------------------------------------------------------- player */
 
 #player-view {

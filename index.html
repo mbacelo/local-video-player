@@ -62,6 +62,17 @@
     <p id="no-results" class="no-results" hidden>No videos match your search.</p>
 
     <div id="library-grid" class="library-grid"></div>
+
+    <p id="all-watched" class="no-results" hidden>Everything here has been watched.</p>
+
+    <section id="watched-section" class="watched-section" hidden>
+      <button id="watched-toggle" class="section-toggle" aria-expanded="false" aria-controls="watched-grid">
+        <span class="section-caret" aria-hidden="true">▸</span>
+        <span class="section-title">Watched</span>
+        <span id="watched-count" class="section-count"></span>
+      </button>
+      <div id="watched-grid" class="library-grid" hidden></div>
+    </section>
   </main>
 </div>
 

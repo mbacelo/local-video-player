@@ -18,6 +18,7 @@ const state = {
   posterUrls: new Map(),
   modalOpen: false,
   currentId: null,
+  watchedOpen: false,
 };
 
 let player;
@@ -145,6 +146,21 @@ function visibleVideos() {
   return list;
 }
 
+/** Videos split the way the library shows them: still to watch, then watched. */
+function partitioned() {
+  const list = visibleVideos();
+  return {
+    pending: list.filter((v) => !v.completed),
+    watched: list.filter((v) => v.completed),
+  };
+}
+
+/** Display order across both sections -- what prev/next follows. */
+function orderedVideos() {
+  const { pending, watched } = partitioned();
+  return [...pending, ...watched];
+}
+
 function posterUrl(video) {
   if (!video.poster) return null;
   if (state.posterUrls.has(video.id)) return state.posterUrls.get(video.id);
@@ -267,20 +283,43 @@ function formatBytes(bytes) {
 }
 
 function renderLibrary() {
-  const list = visibleVideos();
-  const grid = $('#library-grid');
+  const { pending, watched } = partitioned();
+  const total = pending.length + watched.length;
 
-  releasePosterUrls(new Set(list.map((v) => v.id)));
-  grid.replaceChildren(...list.map(buildCard));
+  releasePosterUrls(new Set([...pending, ...watched].map((v) => v.id)));
+  $('#library-grid').replaceChildren(...pending.map(buildCard));
+
+  // The watched cards are only built while the section is open, so a large
+  // backlog costs nothing until it is asked for.
+  $('#watched-grid').replaceChildren(...(state.watchedOpen ? watched.map(buildCard) : []));
+  renderWatchedSection(watched.length);
 
   $('#empty-state').hidden = state.videos.length > 0;
-  $('#no-results').hidden = state.videos.length === 0 || list.length > 0;
+  $('#no-results').hidden = state.videos.length === 0 || total > 0;
+  // Nothing left to watch, but the watched section below still has entries.
+  $('#all-watched').hidden = pending.length > 0 || watched.length === 0;
 
-  const watched = state.videos.filter((v) => v.completed).length;
   $('#stat-line').textContent = state.videos.length
-    ? `${state.videos.length} video${state.videos.length === 1 ? '' : 's'} · ${watched} watched`
+    ? `${state.videos.length} video${state.videos.length === 1 ? '' : 's'} · ` +
+      `${state.videos.filter((v) => v.completed).length} watched`
     : '';
   $('#btn-clear').disabled = state.videos.length === 0;
+}
+
+function renderWatchedSection(count) {
+  $('#watched-section').hidden = count === 0;
+  $('#watched-count').textContent = String(count);
+  $('#watched-grid').hidden = !state.watchedOpen;
+
+  const toggle = $('#watched-toggle');
+  toggle.setAttribute('aria-expanded', String(state.watchedOpen));
+  toggle.querySelector('.section-caret').textContent = state.watchedOpen ? '▾' : '▸';
+}
+
+function toggleWatchedSection() {
+  state.watchedOpen = !state.watchedOpen;
+  db.setSetting('watchedOpen', state.watchedOpen);
+  renderLibrary();
 }
 
 async function reload() {
@@ -344,7 +383,7 @@ async function onClearLibrary() {
 }
 
 function neighbour(offset) {
-  const list = visibleVideos();
+  const list = orderedVideos();
   const index = list.findIndex((v) => v.id === state.currentId);
   if (index === -1) return null;
   return list[(index + offset + list.length) % list.length] || null;
@@ -491,6 +530,8 @@ function bindToolbar() {
   $('#btn-empty-files').addEventListener('click', onPickFiles);
   $('#btn-empty-folder').addEventListener('click', onPickFolder);
 
+  $('#watched-toggle').addEventListener('click', toggleWatchedSection);
+
   $('#btn-clear').addEventListener('click', onClearLibrary);
   $('#btn-help').addEventListener('click', showShortcuts);
   $('#shortcuts-close').addEventListener('click', closeModals);
@@ -555,6 +596,7 @@ async function main() {
 
   state.sort = await db.getSetting('sort', 'recent');
   $('#sort').value = state.sort;
+  state.watchedOpen = await db.getSetting('watchedOpen', false);
 
   bindToolbar();
   bindDragAndDrop();
