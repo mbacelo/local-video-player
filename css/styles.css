@@ -62,14 +62,6 @@ kbd {
 .btn.danger { background: var(--danger); border-color: var(--danger); color: #fff; }
 .btn-icon { padding: 8px 12px; font-size: 16px; }
 
-/* Only rendered once the browser says the app qualifies for installation. */
-.btn-install {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: transparent;
-}
-.btn-install:hover:not(:disabled) { background: var(--bg-hover); }
-
 .btn-ghost {
   display: grid;
   place-items: center;

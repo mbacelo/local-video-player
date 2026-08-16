@@ -1,54 +1,16 @@
 /**
- * Progressive-web-app plumbing: service worker registration, the install
- * button, and the "an update is ready" prompt.
+ * Progressive-web-app plumbing: service worker registration and the
+ * "an update is ready" prompt.
  *
- * All of it is optional. On a browser without service workers, or on an
+ * Installation is left entirely to the browser's own affordance (the address
+ * bar icon, or the menu). `beforeinstallprompt` is deliberately never
+ * intercepted -- calling preventDefault on it is what would suppress that
+ * built-in offer.
+ *
+ * All of this is optional. On a browser without service workers, or on an
  * insecure origin, every entry point here quietly no-ops and the app runs
  * exactly as it did before.
  */
-
-let deferredPrompt = null;
-
-/* --------------------------------------------------------------- installing */
-
-/**
- * Chrome fires `beforeinstallprompt` when the app qualifies for installation.
- * Stashing the event lets us show our own button instead of the browser's
- * omnibox affordance, which is easy to miss.
- */
-function bindInstallButton(button, onToast) {
-  if (!button) return;
-
-  window.addEventListener('beforeinstallprompt', (event) => {
-    event.preventDefault();
-    deferredPrompt = event;
-    button.hidden = false;
-  });
-
-  button.addEventListener('click', async () => {
-    if (!deferredPrompt) return;
-    button.disabled = true;
-    try {
-      await deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') button.hidden = true;
-    } finally {
-      // The event is single-use; a dismissed prompt is re-offered by the
-      // browser later with a fresh one.
-      deferredPrompt = null;
-      button.disabled = false;
-    }
-  });
-
-  window.addEventListener('appinstalled', () => {
-    deferredPrompt = null;
-    button.hidden = true;
-    onToast?.('Installed. You can now launch the player from your apps list.');
-  });
-
-  // Already running as an installed app: nothing to offer.
-  if (window.matchMedia('(display-mode: standalone)').matches) button.hidden = true;
-}
 
 /* ------------------------------------------------------------- service worker */
 
@@ -103,10 +65,8 @@ async function registerServiceWorker(onToast) {
 
 /**
  * @param {object} options
- * @param {HTMLElement|null} options.installButton
  * @param {(message: string, opts?: object) => void} [options.onToast]
  */
-export function initPwa({ installButton, onToast } = {}) {
-  bindInstallButton(installButton, onToast);
+export function initPwa({ onToast } = {}) {
   return registerServiceWorker(onToast);
 }

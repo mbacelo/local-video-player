@@ -80,11 +80,10 @@ deleted**.
 The app is a PWA, so it can be installed and run in its own window with no
 browser chrome, and launched from the Start menu, taskbar or dock.
 
-On a secure origin (the deployed GitHub Pages site, or `localhost`), an **Install
-app** button appears in the toolbar once Chrome decides the app qualifies —
-usually straight away. You can also use the install icon in the address bar, or
-**⋮ → Cast, save and share → Install page as app** in Chrome / **⋯ → Apps →
-Install this site as an app** in Edge.
+Install it from the browser, on a secure origin (the deployed GitHub Pages site,
+or `localhost`): use the install icon in the address bar, or **⋮ → Cast, save and
+share → Install page as app** in Chrome / **⋯ → Apps → Install this site as an
+app** in Edge. The app deliberately shows no install button of its own.
 
 The service worker caches the app shell (HTML, CSS, JS, icons), so the installed
 app opens instantly and works with no network at all. **Videos are not cached** —
@@ -100,11 +99,11 @@ Press <kbd>?</kbd> anywhere in the app for the full list.
 
 | Key | Action | | Key | Action |
 | --- | --- | --- | --- | --- |
-| `Space` `K` | Play / pause | | `M` | Mute |
-| `J` / `L` | ∓10 seconds | | `↑` / `↓` | Volume ±5% |
-| `←` / `→` | ∓5 seconds | | `F` | Fullscreen |
-| `Shift` + `←` / `→` | ∓30 seconds | | `?` | Show shortcuts |
-| `Shift` + `,` / `.` | Playback speed | | `Esc` | Exit fullscreen, or back to library |
+| `Space` | Play / pause | | `M` | Mute |
+| `←` / `→` | ∓5 seconds | | `↑` / `↓` | Volume ±5% |
+| `Shift` + `←` / `→` | ∓30 seconds | | `F` | Fullscreen |
+| `Shift` + `,` / `.` | Playback speed | | `?` | Show shortcuts |
+| | | | `Esc` | Exit fullscreen, or back to library |
 
 ## Limitations
 
@@ -132,7 +131,7 @@ js/library.js                 adding, folder scanning, permissions, thumbnails
 js/progress.js                watched-interval math (pure functions)
 js/player.js                  playback, controls, shortcuts
 js/ui.js                      library UI, modals, drag & drop, app wiring
-js/pwa.js                     service worker registration, install button
+js/pwa.js                     service worker registration, update prompt
 sw.js                         offline cache for the app shell (not videos)
 manifest.webmanifest          PWA metadata: name, icons, standalone window
 icons/                        app icons (192, 512, maskable, apple-touch)

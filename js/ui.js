@@ -529,10 +529,7 @@ async function main() {
   checkSupport();
   await db.requestPersistentStorage();
 
-  initPwa({
-    installButton: $('#btn-install'),
-    onToast: (message, options) => toast(message, options),
-  });
+  initPwa({ onToast: (message, options) => toast(message, options) });
 
   player = new Player({
     onClose: closePlayer,

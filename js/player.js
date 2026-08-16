@@ -565,9 +565,7 @@ export class Player {
   #handleKey(e) {
     const key = e.key;
 
-    if (key === ' ' || key === 'k' || key === 'K') return this.togglePlay(), true;
-    if (key === 'j' || key === 'J') return this.seekBy(-10), true;
-    if (key === 'l' || key === 'L') return this.seekBy(10), true;
+    if (key === ' ') return this.togglePlay(), true;
     // Shift turns the arrow keys into a coarse jump, for skipping intros and
     // the like without leaving the keyboard.
     const step = e.shiftKey ? SEEK_STEP_LARGE : SEEK_STEP;
@@ -598,9 +596,7 @@ export const SHORTCUTS = [
   {
     group: 'Playback',
     items: [
-      { keys: ['Space', 'K'], label: 'Play / pause' },
-      { keys: ['J'], label: 'Back 10 seconds' },
-      { keys: ['L'], label: 'Forward 10 seconds' },
+      { keys: ['Space'], label: 'Play / pause' },
       { keys: ['←'], label: 'Back 5 seconds' },
       { keys: ['→'], label: 'Forward 5 seconds' },
       { keys: ['Shift', '←'], label: 'Back 30 seconds' },
