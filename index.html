@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Play videos straight from your disk, with a library and watch tracking. Nothing is ever uploaded.">
-<meta name="theme-color" content="#0f0f0f">
+<meta name="theme-color" content="#0e0f13">
 <title>Local Video Player</title>
 <link rel="stylesheet" href="css/styles.css">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M9.6 8.7 22 3.4V20.6L9.6 15.3Z' fill='%23f7a13a' opacity='.5'/><circle cx='5.6' cy='12' r='4' fill='%23f7a13a'/></svg>">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -16,11 +16,26 @@
 </head>
 <body>
 
+<!-- Gradient for the logomark's beam, defined once and referenced by every
+     instance of the mark. -->
+<svg class="svg-defs" aria-hidden="true">
+  <defs>
+    <linearGradient id="beam-fade" x1="9.6" y1="0" x2="22" y2="0" gradientUnits="userSpaceOnUse">
+      <stop class="beam-near" offset="0"></stop>
+      <stop class="beam-far" offset="1"></stop>
+    </linearGradient>
+  </defs>
+</svg>
+
 <!-- ------------------------------------------------------------- library -->
 <div id="library-view">
   <header class="app-header">
     <div class="brand">
-      <span class="brand-mark">▶</span>
+      <!-- Logomark: a projector lens throwing a beam. -->
+      <svg class="mark brand-mark" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M9.6 8.7 22 3.4V20.6L9.6 15.3Z" fill="url(#beam-fade)"></path>
+        <circle cx="5.6" cy="12" r="4" fill="currentColor"></circle>
+      </svg>
       <h1>Local Video Player</h1>
       <span id="stat-line" class="stat-line"></span>
     </div>
@@ -44,7 +59,10 @@
 
   <main>
     <div id="empty-state" class="empty-state">
-      <div class="empty-art">🎬</div>
+      <svg class="mark empty-art" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M9.6 8.7 22 3.4V20.6L9.6 15.3Z" fill="url(#beam-fade)"></path>
+        <circle cx="5.6" cy="12" r="4" fill="currentColor"></circle>
+      </svg>
       <h2>Drop videos anywhere on this page</h2>
       <p>
         Drop a single video and it starts playing right away. Drop several files

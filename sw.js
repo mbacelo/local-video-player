@@ -9,7 +9,7 @@
  * activate and clients are told to reload.
  */
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const CACHE_NAME = `local-video-player-${CACHE_VERSION}`;
 
 const SHELL = [
