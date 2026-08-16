@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Video Viewer</title>
+<link rel="stylesheet" href="css/styles.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
+</head>
+<body>
+
+<!-- ------------------------------------------------------------- library -->
+<div id="library-view">
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-mark">▶</span>
+      <h1>Video Viewer</h1>
+      <span id="stat-line" class="stat-line"></span>
+    </div>
+
+    <div class="toolbar">
+      <input id="search" type="search" placeholder="Search library…" aria-label="Search library">
+      <select id="sort" aria-label="Sort library">
+        <option value="recent">Recently added</option>
+        <option value="name">Name</option>
+        <option value="duration">Longest first</option>
+      </select>
+      <button id="btn-add-files" class="btn">Add videos</button>
+      <button id="btn-add-folder" class="btn">Add folder</button>
+      <button id="btn-clear" class="btn btn-quiet">Clear library</button>
+      <button id="btn-help" class="btn btn-icon" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+    </div>
+  </header>
+
+  <p id="support-banner" class="support-banner" hidden></p>
+
+  <main>
+    <div id="empty-state" class="empty-state">
+      <div class="empty-art">🎬</div>
+      <h2>Drop videos anywhere on this page</h2>
+      <p>
+        Drop a single video and it starts playing right away. Drop several files
+        or a whole folder to build your library.
+      </p>
+      <p class="empty-fine">
+        Videos are read directly from your disk and never uploaded anywhere.
+        Press <kbd>?</kbd> at any time for the keyboard shortcuts.
+      </p>
+    </div>
+
+    <p id="no-results" class="no-results" hidden>No videos match your search.</p>
+
+    <div id="library-grid" class="library-grid"></div>
+  </main>
+</div>
+
+<!-- -------------------------------------------------------------- player -->
+<div id="player-view" hidden>
+  <div id="video-stage" data-fit="fit">
+    <video id="video" playsinline></video>
+
+    <div id="center-flash" class="center-flash">
+      <span class="flash-icon"></span>
+      <span class="flash-label"></span>
+    </div>
+  </div>
+
+  <div class="player-topbar">
+    <button id="btn-back" class="btn-ghost" title="Back to library (Esc)" aria-label="Back to library">←</button>
+    <h2 id="video-title"></h2>
+  </div>
+
+  <div id="controls" class="controls">
+    <div id="scrub" class="scrub" role="slider" aria-label="Seek" tabindex="-1">
+      <div class="scrub-track">
+        <div id="bar-buffered" class="bar bar-buffered"></div>
+        <div id="bar-seen" class="bar bar-seen"></div>
+        <div id="bar-hover" class="bar bar-hover"></div>
+        <div id="bar-played" class="bar bar-played"></div>
+      </div>
+      <div id="scrub-thumb" class="scrub-thumb"></div>
+
+      <div id="preview" class="preview" hidden>
+        <canvas id="preview-canvas" width="176"></canvas>
+        <span id="preview-time" class="preview-time">0:00</span>
+      </div>
+    </div>
+
+    <div class="control-row">
+      <button id="btn-prev" class="btn-ghost" title="Previous video (p)" aria-label="Previous video">⏮</button>
+      <button id="btn-play" class="btn-ghost btn-play" title="Play/pause (k)" aria-label="Play or pause"></button>
+      <button id="btn-next" class="btn-ghost" title="Next video (n)" aria-label="Next video">⏭</button>
+
+      <div class="volume-group">
+        <button id="btn-mute" class="btn-ghost btn-volume" data-state="high" title="Mute (m)" aria-label="Mute"></button>
+        <input id="volume" class="volume-slider" type="range" min="0" max="1" step="0.01" value="1" aria-label="Volume">
+      </div>
+
+      <div class="time-display">
+        <span id="time-current">0:00</span>
+        <span class="time-sep">/</span>
+        <span id="time-duration">0:00</span>
+      </div>
+
+      <div class="spacer"></div>
+
+      <div class="menu-anchor">
+        <button id="btn-speed" class="btn-ghost btn-text" title="Playback speed (&lt; and &gt;)">1×</button>
+        <div id="speed-menu" class="popup-menu" hidden>
+          <div class="popup-title">Speed</div>
+          <button data-rate="0.25">0.25×</button>
+          <button data-rate="0.5">0.5×</button>
+          <button data-rate="0.75">0.75×</button>
+          <button data-rate="1" class="active">Normal</button>
+          <button data-rate="1.25">1.25×</button>
+          <button data-rate="1.5">1.5×</button>
+          <button data-rate="1.75">1.75×</button>
+          <button data-rate="2">2×</button>
+        </div>
+      </div>
+
+      <div class="menu-anchor">
+        <button id="btn-fit" class="btn-ghost btn-text" title="Display size (r)" aria-label="Display size">Fit</button>
+        <div id="fit-menu" class="popup-menu" hidden>
+          <div class="popup-title">Display size</div>
+          <button data-fit="fit" class="active">Fit to window</button>
+          <button data-fit="fill">Fill window</button>
+          <button data-fit="native">Native 1:1 (no scaling)</button>
+        </div>
+      </div>
+
+      <button id="btn-shortcuts" class="btn-ghost btn-text" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+      <button id="btn-pip" class="btn-ghost" title="Picture-in-picture (i)" aria-label="Picture in picture">⧉</button>
+      <button id="btn-theater" class="btn-ghost" title="Theater mode (t)" aria-label="Theater mode">▭</button>
+      <button id="btn-fullscreen" class="btn-ghost" title="Fullscreen (f)" aria-label="Fullscreen">⛶</button>
+    </div>
+  </div>
+
+  <video id="preview-video" muted playsinline preload="auto" aria-hidden="true"></video>
+</div>
+
+<!-- --------------------------------------------------------------- chrome -->
+<div id="drop-overlay" class="drop-overlay" hidden>
+  <div class="drop-card">
+    <div class="drop-art">⬇</div>
+    <h2>Drop to add</h2>
+    <p>A single video starts playing immediately.</p>
+  </div>
+</div>
+
+<div id="modal-backdrop" class="modal-backdrop" hidden></div>
+
+<div id="confirm-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title" hidden>
+  <h2 id="confirm-title"></h2>
+  <p id="confirm-body"></p>
+  <div class="modal-actions">
+    <button id="confirm-cancel" class="btn btn-quiet">Cancel</button>
+    <button id="confirm-ok" class="btn">Confirm</button>
+  </div>
+</div>
+
+<div id="shortcuts-modal" class="modal modal-wide" role="dialog" aria-modal="true" aria-labelledby="shortcuts-title" hidden>
+  <div class="modal-header">
+    <h2 id="shortcuts-title">Keyboard shortcuts</h2>
+    <button id="shortcuts-close" class="btn-ghost" aria-label="Close">×</button>
+  </div>
+  <div id="shortcuts-body" class="shortcuts-body"></div>
+</div>
+
+<div id="toast-container" class="toast-container"></div>
+
+<script type="module" src="js/ui.js"></script>
+</body>
+</html>
