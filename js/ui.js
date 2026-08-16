@@ -7,6 +7,7 @@ import * as db from './db.js';
 import * as lib from './library.js';
 import { Player, formatTime, SHORTCUTS } from './player.js';
 import { coverage } from './progress.js';
+import { initPwa } from './pwa.js';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -527,6 +528,11 @@ function checkSupport() {
 async function main() {
   checkSupport();
   await db.requestPersistentStorage();
+
+  initPwa({
+    installButton: $('#btn-install'),
+    onToast: (message, options) => toast(message, options),
+  });
 
   player = new Player({
     onClose: closePlayer,

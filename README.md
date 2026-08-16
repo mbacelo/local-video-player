@@ -75,6 +75,25 @@ and *Clear library*, which asks for confirmation first. Removing or clearing onl
 forgets entries in this browser — **no file on disk is ever modified or
 deleted**.
 
+## Installing it as an app
+
+The app is a PWA, so it can be installed and run in its own window with no
+browser chrome, and launched from the Start menu, taskbar or dock.
+
+On a secure origin (the deployed GitHub Pages site, or `localhost`), an **Install
+app** button appears in the toolbar once Chrome decides the app qualifies —
+usually straight away. You can also use the install icon in the address bar, or
+**⋮ → Cast, save and share → Install page as app** in Chrome / **⋯ → Apps →
+Install this site as an app** in Edge.
+
+The service worker caches the app shell (HTML, CSS, JS, icons), so the installed
+app opens instantly and works with no network at all. **Videos are not cached** —
+they are read from your disk on demand and never enter the cache. When a new
+version is deployed, a *A new version is ready* toast offers to reload.
+
+To uninstall: open the app, then **⋮ → Uninstall**. That removes the window, not
+your library — the IndexedDB data belongs to the origin and survives.
+
 ## Keyboard shortcuts
 
 Press <kbd>?</kbd> anywhere in the app for the full list.
@@ -84,7 +103,7 @@ Press <kbd>?</kbd> anywhere in the app for the full list.
 | `Space` `K` | Play / pause | | `M` | Mute |
 | `J` / `L` | ∓10 seconds | | `↑` / `↓` | Volume ±5% |
 | `←` / `→` | ∓5 seconds | | `F` | Fullscreen |
-| `,` / `.` | Frame step (paused) | | `?` | Show shortcuts |
+| `Shift` + `←` / `→` | ∓30 seconds | | `?` | Show shortcuts |
 | `Shift` + `,` / `.` | Playback speed | | `Esc` | Exit fullscreen, or back to library |
 
 ## Limitations
@@ -113,6 +132,10 @@ js/library.js                 adding, folder scanning, permissions, thumbnails
 js/progress.js                watched-interval math (pure functions)
 js/player.js                  playback, controls, shortcuts
 js/ui.js                      library UI, modals, drag & drop, app wiring
+js/pwa.js                     service worker registration, install button
+sw.js                         offline cache for the app shell (not videos)
+manifest.webmanifest          PWA metadata: name, icons, standalone window
+icons/                        app icons (192, 512, maskable, apple-touch)
 .nojekyll                     tells GitHub Pages to serve the files as-is
 ```
 

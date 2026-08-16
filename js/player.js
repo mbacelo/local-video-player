@@ -9,7 +9,8 @@ import { WatchTracker, firstUnwatched } from './progress.js';
 const SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 const CONTROLS_IDLE_MS = 3000;
 const SAVE_INTERVAL_MS = 5000;
-const DEFAULT_FRAME = 1 / 30;
+const SEEK_STEP = 5;
+const SEEK_STEP_LARGE = 30;
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -47,7 +48,6 @@ export class Player {
     this.record = null;
     this.objectUrl = null;
     this.tracker = null;
-    this.frameDuration = DEFAULT_FRAME;
     this.idleTimer = null;
     this.saveTimer = null;
     this.scrubbing = false;
@@ -90,7 +90,6 @@ export class Player {
 
     this.record = record;
     this.objectUrl = URL.createObjectURL(file);
-    this.frameDuration = DEFAULT_FRAME;
 
     this.tracker = new WatchTracker({
       intervals: record.watchedIntervals || [],
@@ -181,7 +180,6 @@ export class Player {
       this.tracker?.setDuration(Number.isFinite(duration) ? duration : Infinity);
       this.#renderTime();
       this.#renderSeen();
-      this.#measureFrameRate();
 
       // Resume where the viewer left off, unless they finished it -- then the
       // sensible default is the first thing they haven't seen.
@@ -252,33 +250,6 @@ export class Player {
       clickTimer = null;
       this.toggleFullscreen();
     });
-  }
-
-  /**
-   * Estimate the source frame rate so `,` and `.` step exactly one frame.
-   * Falls back to 1/30 when requestVideoFrameCallback is unavailable.
-   */
-  #measureFrameRate() {
-    if (!this.video.requestVideoFrameCallback) return;
-    let last = null;
-    let samples = [];
-
-    const onFrame = (_now, meta) => {
-      if (last !== null) {
-        const delta = meta.mediaTime - last;
-        if (delta > 0.001 && delta < 0.2) samples.push(delta);
-      }
-      last = meta.mediaTime;
-
-      if (samples.length >= 10) {
-        samples.sort((a, b) => a - b);
-        const median = samples[Math.floor(samples.length / 2)];
-        if (median > 0) this.frameDuration = median;
-        return;
-      }
-      this.video.requestVideoFrameCallback(onFrame);
-    };
-    this.video.requestVideoFrameCallback(onFrame);
   }
 
   #bindControls() {
@@ -483,16 +454,6 @@ export class Player {
     this.#flashIcon(delta > 0 ? 'forward' : 'backward', `${Math.abs(delta)}s`);
   }
 
-  stepFrame(direction) {
-    if (!this.video.duration) return;
-    this.video.pause();
-    this.tracker?.break();
-    this.video.currentTime = Math.max(
-      0,
-      Math.min(this.video.duration, this.video.currentTime + direction * this.frameDuration)
-    );
-  }
-
   adjustVolume(delta) {
     const next = Math.min(1, Math.max(0, this.video.volume + delta));
     this.video.volume = next;
@@ -607,20 +568,20 @@ export class Player {
     if (key === ' ' || key === 'k' || key === 'K') return this.togglePlay(), true;
     if (key === 'j' || key === 'J') return this.seekBy(-10), true;
     if (key === 'l' || key === 'L') return this.seekBy(10), true;
-    if (key === 'ArrowLeft') return this.seekBy(-5), true;
-    if (key === 'ArrowRight') return this.seekBy(5), true;
+    // Shift turns the arrow keys into a coarse jump, for skipping intros and
+    // the like without leaving the keyboard.
+    const step = e.shiftKey ? SEEK_STEP_LARGE : SEEK_STEP;
+    if (key === 'ArrowLeft') return this.seekBy(-step), true;
+    if (key === 'ArrowRight') return this.seekBy(step), true;
     if (key === 'ArrowUp') return this.adjustVolume(0.05), true;
     if (key === 'ArrowDown') return this.adjustVolume(-0.05), true;
     if (key === 'm' || key === 'M') return this.toggleMute(), true;
     if (key === 'f' || key === 'F') return this.toggleFullscreen(), true;
-    // Speed and frame stepping key off `e.code` as well as `e.key`: on non-US
-    // layouts Shift+, / Shift+. do not produce `<` / `>`.
+    // Speed stepping keys off `e.code` as well as `e.key`: on non-US layouts
+    // Shift+, / Shift+. do not produce `<` / `>`.
     if (e.shiftKey) {
       if (key === '<' || e.code === 'Comma') return this.stepSpeed(-1), true;
       if (key === '>' || e.code === 'Period') return this.stepSpeed(1), true;
-    } else {
-      if (key === ',' || e.code === 'Comma') return this.stepFrame(-1), true;
-      if (key === '.' || e.code === 'Period') return this.stepFrame(1), true;
     }
 
     if (key === 'Escape') {
@@ -642,8 +603,8 @@ export const SHORTCUTS = [
       { keys: ['L'], label: 'Forward 10 seconds' },
       { keys: ['←'], label: 'Back 5 seconds' },
       { keys: ['→'], label: 'Forward 5 seconds' },
-      { keys: [','], label: 'Previous frame (while paused)' },
-      { keys: ['.'], label: 'Next frame (while paused)' },
+      { keys: ['Shift', '←'], label: 'Back 30 seconds' },
+      { keys: ['Shift', '→'], label: 'Forward 30 seconds' },
       { keys: ['Shift', ','], label: 'Decrease playback speed' },
       { keys: ['Shift', '.'], label: 'Increase playback speed' },
     ],

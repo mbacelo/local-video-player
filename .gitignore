@@ -12,3 +12,6 @@ desktop.ini
 .playwright-mcp/
 _test-*.mp4
 *.png
+
+# ...but the app icons are part of the site
+!icons/*.png
