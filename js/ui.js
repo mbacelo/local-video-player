@@ -111,16 +111,9 @@ function showShortcuts() {
         const keys = document.createElement('div');
         keys.className = 'shortcut-keys';
         for (const key of item.keys) {
-          if (key === '–') {
-            const dash = document.createElement('span');
-            dash.className = 'shortcut-dash';
-            dash.textContent = '–';
-            keys.append(dash);
-          } else {
-            const kbd = document.createElement('kbd');
-            kbd.textContent = key;
-            keys.append(kbd);
-          }
+          const kbd = document.createElement('kbd');
+          kbd.textContent = key;
+          keys.append(kbd);
         }
 
         const label = document.createElement('div');
@@ -482,15 +475,20 @@ function bindToolbar() {
     renderLibrary();
   });
 
-  $('#btn-add-files').addEventListener('click', async () => {
+  const onPickFiles = async () => {
     const handles = await lib.pickFiles();
     if (handles.length) await addHandles(handles, []);
-  });
+  };
 
-  $('#btn-add-folder').addEventListener('click', async () => {
+  const onPickFolder = async () => {
     const handle = await lib.pickFolder();
     if (handle) await addHandles([], [handle]);
-  });
+  };
+
+  $('#btn-add-files').addEventListener('click', onPickFiles);
+  $('#btn-add-folder').addEventListener('click', onPickFolder);
+  $('#btn-empty-files').addEventListener('click', onPickFiles);
+  $('#btn-empty-folder').addEventListener('click', onPickFolder);
 
   $('#btn-clear').addEventListener('click', onClearLibrary);
   $('#btn-help').addEventListener('click', showShortcuts);
@@ -560,7 +558,7 @@ async function main() {
   await reload();
 
   // Debug handle -- inspect state or drive the player from DevTools.
-  window.videoViewer = { state, player, db, lib, reload, toast };
+  window.localVideoViewer = { state, player, db, lib, reload, toast };
 
   // Pick up files added to remembered folders since the last visit. Silent:
   // it only touches folders whose permission is still granted.

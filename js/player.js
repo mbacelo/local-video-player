@@ -1,13 +1,12 @@
 /**
- * The video player: custom controls, YouTube-style keyboard shortcuts,
- * watched-segment tracking, and resolution-preserving fit modes.
+ * The video player: custom controls, YouTube-style keyboard shortcuts, and
+ * watched-segment tracking.
  */
 
 import * as db from './db.js';
 import { WatchTracker, firstUnwatched } from './progress.js';
 
 const SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
-const FIT_MODES = ['fit', 'fill', 'native'];
 const CONTROLS_IDLE_MS = 3000;
 const SAVE_INTERVAL_MS = 5000;
 const DEFAULT_FRAME = 1 / 30;
@@ -58,7 +57,6 @@ export class Player {
       volume: 1,
       muted: false,
       playbackRate: 1,
-      fitMode: 'fit',
     };
 
     this.#bindVideo();
@@ -73,7 +71,6 @@ export class Player {
     this.settings = await db.getSettings(this.settings);
     this.video.volume = this.settings.volume;
     this.video.muted = this.settings.muted;
-    this.setFitMode(this.settings.fitMode, { persist: false });
     this.#renderVolume();
   }
 
@@ -101,7 +98,7 @@ export class Player {
     });
 
     this.titleEl.textContent = record.name;
-    document.title = `${record.name} — Video Viewer`;
+    document.title = `${record.name} — Local Video Player`;
 
     this.video.src = this.objectUrl;
     this.previewVideo.src = this.objectUrl;
@@ -127,8 +124,8 @@ export class Player {
     this.record = null;
     this.tracker = null;
     this.root.hidden = true;
-    document.body.classList.remove('playing-video', 'theater');
-    document.title = 'Video Viewer';
+    document.body.classList.remove('playing-video');
+    document.title = 'Local Video Player';
   }
 
   #releaseUrl() {
@@ -184,7 +181,6 @@ export class Player {
       this.tracker?.setDuration(Number.isFinite(duration) ? duration : Infinity);
       this.#renderTime();
       this.#renderSeen();
-      this.#applyFitMode();
       this.#measureFrameRate();
 
       // Resume where the viewer left off, unless they finished it -- then the
@@ -289,8 +285,6 @@ export class Player {
     $('#btn-play').addEventListener('click', () => this.togglePlay());
     $('#btn-back').addEventListener('click', () => this.cb.onClose?.());
     $('#btn-mute').addEventListener('click', () => this.toggleMute());
-    $('#btn-pip').addEventListener('click', () => this.togglePip());
-    $('#btn-theater').addEventListener('click', () => this.toggleTheater());
     $('#btn-fullscreen').addEventListener('click', () => this.toggleFullscreen());
     $('#btn-shortcuts').addEventListener('click', () => this.cb.onShowShortcuts?.());
     $('#btn-next').addEventListener('click', () => this.cb.onNext?.());
@@ -306,7 +300,6 @@ export class Player {
     $('#btn-speed').addEventListener('click', (e) => {
       e.stopPropagation();
       speedMenu.hidden = !speedMenu.hidden;
-      $('#fit-menu').hidden = true;
     });
     speedMenu.addEventListener('click', (e) => {
       const rate = e.target.dataset?.rate;
@@ -315,27 +308,12 @@ export class Player {
       speedMenu.hidden = true;
     });
 
-    const fitMenu = $('#fit-menu');
-    $('#btn-fit').addEventListener('click', (e) => {
-      e.stopPropagation();
-      fitMenu.hidden = !fitMenu.hidden;
-      speedMenu.hidden = true;
-    });
-    fitMenu.addEventListener('click', (e) => {
-      const mode = e.target.dataset?.fit;
-      if (!mode) return;
-      this.setFitMode(mode);
-      fitMenu.hidden = true;
-    });
-
     document.addEventListener('click', () => {
       speedMenu.hidden = true;
-      fitMenu.hidden = true;
     });
 
     document.addEventListener('fullscreenchange', () => {
       this.root.classList.toggle('is-fullscreen', Boolean(document.fullscreenElement));
-      this.#applyFitMode();
     });
   }
 
@@ -485,49 +463,6 @@ export class Player {
     }
   }
 
-  /* ------------------------------------------------------------ fit modes */
-
-  setFitMode(mode, { persist = true } = {}) {
-    if (!FIT_MODES.includes(mode)) mode = 'fit';
-    this.settings.fitMode = mode;
-    if (persist) db.setSetting('fitMode', mode);
-    this.#applyFitMode();
-    for (const el of $('#fit-menu').querySelectorAll('[data-fit]')) {
-      el.classList.toggle('active', el.dataset.fit === mode);
-    }
-    $('#btn-fit').textContent = mode === 'native' ? '1:1' : mode === 'fill' ? 'Fill' : 'Fit';
-    this.cb.onToast?.(
-      mode === 'native'
-        ? 'Native 1:1 — no scaling'
-        : mode === 'fill'
-          ? 'Fill — cropped to window'
-          : 'Fit — scaled to window'
-    );
-  }
-
-  cycleFitMode() {
-    const next = FIT_MODES[(FIT_MODES.indexOf(this.settings.fitMode) + 1) % FIT_MODES.length];
-    this.setFitMode(next);
-  }
-
-  /**
-   * The video always decodes at source resolution; this only controls how the
-   * decoded frame is laid out. `native` sizes the element to the exact pixel
-   * dimensions so the browser performs no resampling at all.
-   */
-  #applyFitMode() {
-    const mode = this.settings.fitMode;
-    this.stage.dataset.fit = mode;
-
-    if (mode === 'native' && this.video.videoWidth) {
-      this.video.style.width = `${this.video.videoWidth}px`;
-      this.video.style.height = `${this.video.videoHeight}px`;
-    } else {
-      this.video.style.width = '';
-      this.video.style.height = '';
-    }
-  }
-
   /* --------------------------------------------------------------- actions */
 
   togglePlay() {
@@ -546,13 +481,6 @@ export class Player {
     this.tracker?.break();
     this.video.currentTime = Math.min(duration, Math.max(0, this.video.currentTime + delta));
     this.#flashIcon(delta > 0 ? 'forward' : 'backward', `${Math.abs(delta)}s`);
-  }
-
-  seekToFraction(fraction) {
-    const duration = this.video.duration;
-    if (!duration) return;
-    this.tracker?.break();
-    this.video.currentTime = duration * fraction;
   }
 
   stepFrame(direction) {
@@ -599,19 +527,6 @@ export class Player {
     }
   }
 
-  toggleTheater() {
-    document.body.classList.toggle('theater');
-  }
-
-  async togglePip() {
-    try {
-      if (document.pictureInPictureElement) await document.exitPictureInPicture();
-      else await this.video.requestPictureInPicture();
-    } catch {
-      this.cb.onToast?.('Picture-in-picture unavailable for this video');
-    }
-  }
-
   #flashIcon(kind, label = '') {
     this.flash.dataset.kind = kind;
     this.flash.querySelector('.flash-label').textContent = label;
@@ -638,7 +553,6 @@ export class Player {
       if (!this.video.paused && !this.scrubbing) {
         this.root.classList.add('controls-hidden');
         $('#speed-menu').hidden = true;
-        $('#fit-menu').hidden = true;
       }
     }, CONTROLS_IDLE_MS);
   }
@@ -697,28 +611,21 @@ export class Player {
     if (key === 'ArrowRight') return this.seekBy(5), true;
     if (key === 'ArrowUp') return this.adjustVolume(0.05), true;
     if (key === 'ArrowDown') return this.adjustVolume(-0.05), true;
-    if (key === 'Home') return this.seekToFraction(0), true;
-    if (key === 'End') return this.seekToFraction(0.999), true;
     if (key === 'm' || key === 'M') return this.toggleMute(), true;
     if (key === 'f' || key === 'F') return this.toggleFullscreen(), true;
-    if (key === 't' || key === 'T') return this.toggleTheater(), true;
-    if (key === 'i' || key === 'I') return this.togglePip(), true;
-    if (key === 'r' || key === 'R') return this.cycleFitMode(), true;
-    if (key === 'n' || key === 'N') return this.cb.onNext?.(), true;
-    if (key === 'p' || key === 'P') return this.cb.onPrev?.(), true;
-    if (key === ',') return this.stepFrame(-1), true;
-    if (key === '.') return this.stepFrame(1), true;
-    if (key === '<') return this.stepSpeed(-1), true;
-    if (key === '>') return this.stepSpeed(1), true;
+    // Speed and frame stepping key off `e.code` as well as `e.key`: on non-US
+    // layouts Shift+, / Shift+. do not produce `<` / `>`.
+    if (e.shiftKey) {
+      if (key === '<' || e.code === 'Comma') return this.stepSpeed(-1), true;
+      if (key === '>' || e.code === 'Period') return this.stepSpeed(1), true;
+    } else {
+      if (key === ',' || e.code === 'Comma') return this.stepFrame(-1), true;
+      if (key === '.' || e.code === 'Period') return this.stepFrame(1), true;
+    }
 
     if (key === 'Escape') {
       if (document.fullscreenElement) return false; // browser exits fullscreen itself
       this.cb.onClose?.();
-      return true;
-    }
-
-    if (/^[0-9]$/.test(key)) {
-      this.seekToFraction(Number(key) / 10);
       return true;
     }
 
@@ -737,17 +644,8 @@ export const SHORTCUTS = [
       { keys: ['→'], label: 'Forward 5 seconds' },
       { keys: [','], label: 'Previous frame (while paused)' },
       { keys: ['.'], label: 'Next frame (while paused)' },
-      { keys: ['<'], label: 'Decrease playback speed' },
-      { keys: ['>'], label: 'Increase playback speed' },
-    ],
-  },
-  {
-    group: 'Seeking',
-    items: [
-      { keys: ['0'], label: 'Restart video' },
-      { keys: ['1', '–', '9'], label: 'Jump to 10% … 90%' },
-      { keys: ['Home'], label: 'Jump to start' },
-      { keys: ['End'], label: 'Jump to end' },
+      { keys: ['Shift', ','], label: 'Decrease playback speed' },
+      { keys: ['Shift', '.'], label: 'Increase playback speed' },
     ],
   },
   {
@@ -759,20 +657,10 @@ export const SHORTCUTS = [
     ],
   },
   {
-    group: 'Display',
+    group: 'View',
     items: [
       { keys: ['F'], label: 'Fullscreen' },
-      { keys: ['T'], label: 'Theater mode' },
-      { keys: ['I'], label: 'Picture-in-picture' },
-      { keys: ['R'], label: 'Cycle fit: fit → fill → native 1:1' },
       { keys: ['Esc'], label: 'Exit fullscreen, or back to library' },
-    ],
-  },
-  {
-    group: 'Library',
-    items: [
-      { keys: ['N'], label: 'Next video' },
-      { keys: ['P'], label: 'Previous video' },
       { keys: ['?'], label: 'Show this list' },
     ],
   },

@@ -7,7 +7,7 @@
  * Video bytes are never copied into the database; only handles and small metadata.
  */
 
-const DB_NAME = 'video-viewer';
+const DB_NAME = 'local-video-player';
 const DB_VERSION = 1;
 
 const STORE_VIDEOS = 'videos';

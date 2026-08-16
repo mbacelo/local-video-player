@@ -1,4 +1,4 @@
-# Video Viewer
+# Local Video Player
 
 A local video player with a YouTube-style interface, a persistent library, and
 watched-segment tracking. Your videos are read straight off your disk and are
@@ -11,7 +11,7 @@ No build step, no dependencies, no framework — plain HTML, CSS and ES modules.
 Push this repository to GitHub, then in the repo: **Settings → Pages → Build and
 deployment → Deploy from a branch → `main` → `/ (root)`**.
 
-The site appears at `https://<your-user>.github.io/video-viewer/` a minute or so
+The site appears at `https://<your-user>.github.io/local-video-player/` a minute or so
 later. There is no build step — Pages serves these files as they are.
 
 Hosting the app publicly does **not** make your videos public. Only the app's own
@@ -67,14 +67,8 @@ already seen. Seeking past a section does not mark it watched — only real
 playback does. At 90% coverage a video is badged **Watched** in the library, and
 reopening a finished video jumps to the first part you never saw.
 
-**Picture quality.** The video always decodes at its native resolution. The fit
-button (or `R`) cycles three layouts:
-
-| Mode | Behaviour |
-| --- | --- |
-| Fit | Scaled to the window, nothing cropped (default) |
-| Fill | Fills the window, edges cropped |
-| Native 1:1 | Exact source pixels, no resampling at all — scroll to pan |
+**Picture quality.** The video always decodes at its native resolution and is
+scaled to the window without cropping.
 
 **The library** supports search, sorting, removing a single video (with undo),
 and *Clear library*, which asks for confirmation first. Removing or clearing only
@@ -90,11 +84,8 @@ Press <kbd>?</kbd> anywhere in the app for the full list.
 | `Space` `K` | Play / pause | | `M` | Mute |
 | `J` / `L` | ∓10 seconds | | `↑` / `↓` | Volume ±5% |
 | `←` / `→` | ∓5 seconds | | `F` | Fullscreen |
-| `,` / `.` | Frame step (paused) | | `T` | Theater mode |
-| `<` / `>` | Playback speed | | `I` | Picture-in-picture |
-| `0`–`9` | Jump to 0–90% | | `R` | Cycle fit mode |
-| `Home` / `End` | Start / end | | `N` / `P` | Next / previous video |
-| `Esc` | Exit fullscreen, or back to library | | `?` | Show shortcuts |
+| `,` / `.` | Frame step (paused) | | `?` | Show shortcuts |
+| `Shift` + `,` / `.` | Playback speed | | `Esc` | Exit fullscreen, or back to library |
 
 ## Limitations
 
@@ -120,14 +111,14 @@ css/styles.css                all styling
 js/db.js                      IndexedDB: handles, metadata, watch state
 js/library.js                 adding, folder scanning, permissions, thumbnails
 js/progress.js                watched-interval math (pure functions)
-js/player.js                  playback, controls, shortcuts, fit modes
+js/player.js                  playback, controls, shortcuts
 js/ui.js                      library UI, modals, drag & drop, app wiring
 .nojekyll                     tells GitHub Pages to serve the files as-is
 ```
 
-Data lives in the `video-viewer` IndexedDB database, scoped to whichever origin
+Data lives in the `local-video-player` IndexedDB database, scoped to whichever origin
 you loaded the app from. *Clear library* empties it; clearing the site's data in
 Chrome does the same.
 
-`window.videoViewer` is exposed in the console (`state`, `player`, `db`, `lib`,
+`window.localVideoViewer` is exposed in the console (`state`, `player`, `db`, `lib`,
 `reload`, `toast`) if you ever need to inspect or debug the library by hand.
