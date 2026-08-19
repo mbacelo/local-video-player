@@ -176,6 +176,28 @@ export class WatchTracker {
     return isComplete(this.snapshot(), this.duration);
   }
 
+  /**
+   * Paint a span as seen without having played it.
+   *
+   * Used for the arrow-key jumps: skipping ahead 5 or 30 seconds is the viewer
+   * saying "I'm done with this bit", so it counts. Dragging the scrub bar to an
+   * arbitrary point does not -- that leaves a real gap.
+   *
+   * @returns {boolean} true if the stored ranges changed
+   */
+  mark(start, end) {
+    if (!Number.isFinite(start) || !Number.isFinite(end)) return false;
+    const before = watchedSeconds(this.intervals);
+    this.break();
+    this.intervals = mergeIntervals(
+      [...this.intervals, [start, end]],
+      this.duration
+    );
+    const changed = watchedSeconds(this.intervals) !== before;
+    if (changed) this.dirty = true;
+    return changed;
+  }
+
   /** Mark everything as seen -- used when the video fires `ended`. */
   markComplete() {
     if (!Number.isFinite(this.duration)) return;

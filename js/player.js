@@ -449,8 +449,17 @@ export class Player {
   seekBy(delta) {
     const duration = this.video.duration;
     if (!duration) return;
-    this.tracker?.break();
-    this.video.currentTime = Math.min(duration, Math.max(0, this.video.currentTime + delta));
+    const from = this.video.currentTime;
+    const to = Math.min(duration, Math.max(0, from + delta));
+
+    // A forward jump is an intentional skip over content the viewer is done
+    // with, so it counts as seen. Jumping back just replays; nothing to mark.
+    if (to > from) this.tracker?.mark(from, to);
+    else this.tracker?.break();
+
+    this.video.currentTime = to;
+    this.#renderSeen();
+    this.save({ immediate: true });
     this.#flashIcon(delta > 0 ? 'forward' : 'backward', `${Math.abs(delta)}s`);
   }
 
