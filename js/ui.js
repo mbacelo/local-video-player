@@ -16,7 +16,6 @@ const state = {
   search: '',
   sort: 'recent',
   posterUrls: new Map(),
-  modalOpen: false,
   currentId: null,
   watchedOpen: false,
 };
@@ -57,101 +56,84 @@ export function toast(message, { actionLabel, onAction, duration = 4000 } = {}) 
 
 /* ------------------------------------------------------------------ modals */
 
-function openModal(el) {
-  state.modalOpen = true;
-  $('#modal-backdrop').hidden = false;
-  el.hidden = false;
+/**
+ * Confirmation dialog. The buttons live in a `<form method="dialog">`, so the
+ * browser closes the dialog and reports which one was pressed as `returnValue`.
+ * Resolves true when confirmed.
+ */
+async function confirmDialog({ title, body, confirmLabel = 'Confirm', danger = false }) {
+  const dialog = $('#confirm-modal');
+  $('#confirm-title').textContent = title;
+  $('#confirm-body').textContent = body;
+
+  const ok = $('#confirm-ok');
+  ok.textContent = confirmLabel;
+  ok.classList.toggle('danger', danger);
+
+  const { promise, resolve } = Promise.withResolvers();
+  dialog.addEventListener('close', resolve, { once: true });
+  dialog.returnValue = ''; // a light dismiss leaves whatever the last run set
+  dialog.showModal();
+  ok.focus();
+
+  await promise;
+  return dialog.returnValue === 'confirm';
 }
 
-function closeModals() {
-  state.modalOpen = false;
-  $('#modal-backdrop').hidden = true;
-  $('#confirm-modal').hidden = true;
-  $('#shortcuts-modal').hidden = true;
-}
-
-/** Promise-based confirmation dialog. Resolves true when confirmed. */
-function confirmDialog({ title, body, confirmLabel = 'Confirm', danger = false }) {
-  return new Promise((resolve) => {
-    $('#confirm-title').textContent = title;
-    $('#confirm-body').textContent = body;
-    const ok = $('#confirm-ok');
-    ok.textContent = confirmLabel;
-    ok.classList.toggle('danger', danger);
-
-    const done = (result) => {
-      ok.removeEventListener('click', onOk);
-      $('#confirm-cancel').removeEventListener('click', onCancel);
-      closeModals();
-      resolve(result);
-    };
-    const onOk = () => done(true);
-    const onCancel = () => done(false);
-
-    ok.addEventListener('click', onOk);
-    $('#confirm-cancel').addEventListener('click', onCancel);
-    openModal($('#confirm-modal'));
-    ok.focus();
-  });
-}
-
-function showShortcuts() {
+/** The shortcut list is static, so it is built once during bootstrap. */
+function buildShortcuts() {
   const body = $('#shortcuts-body');
-  if (!body.childElementCount) {
-    for (const section of SHORTCUTS) {
-      const group = document.createElement('section');
-      group.className = 'shortcut-group';
+  for (const section of SHORTCUTS) {
+    const group = document.createElement('section');
+    group.className = 'shortcut-group';
 
-      const heading = document.createElement('h3');
-      heading.textContent = section.group;
-      group.append(heading);
+    const heading = document.createElement('h3');
+    heading.textContent = section.group;
+    group.append(heading);
 
-      for (const item of section.items) {
-        const row = document.createElement('div');
-        row.className = 'shortcut-row';
+    for (const item of section.items) {
+      const row = document.createElement('div');
+      row.className = 'shortcut-row';
 
-        const keys = document.createElement('div');
-        keys.className = 'shortcut-keys';
-        for (const key of item.keys) {
-          const kbd = document.createElement('kbd');
-          kbd.textContent = key;
-          keys.append(kbd);
-        }
-
-        const label = document.createElement('div');
-        label.className = 'shortcut-label';
-        label.textContent = item.label;
-
-        row.append(keys, label);
-        group.append(row);
+      const keys = document.createElement('div');
+      keys.className = 'shortcut-keys';
+      for (const key of item.keys) {
+        const kbd = document.createElement('kbd');
+        kbd.textContent = key;
+        keys.append(kbd);
       }
-      body.append(group);
+
+      const label = document.createElement('div');
+      label.className = 'shortcut-label';
+      label.textContent = item.label;
+
+      row.append(keys, label);
+      group.append(row);
     }
+    body.append(group);
   }
-  openModal($('#shortcuts-modal'));
 }
 
 /* ----------------------------------------------------------------- library */
 
 function visibleVideos() {
   const term = state.search.trim().toLowerCase();
-  let list = state.videos.filter((v) => !term || v.name.toLowerCase().includes(term));
+  const matches = state.videos.filter((v) => !term || v.name.toLowerCase().includes(term));
 
   const sorters = {
     recent: (a, b) => b.addedAt - a.addedAt,
     name: (a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }),
     duration: (a, b) => (b.duration || 0) - (a.duration || 0),
   };
-  list.sort(sorters[state.sort] || sorters.recent);
-  return list;
+  return matches.toSorted(sorters[state.sort] ?? sorters.recent);
 }
 
 /** Videos split the way the library shows them: still to watch, then watched. */
 function partitioned() {
-  const list = visibleVideos();
+  const groups = Object.groupBy(visibleVideos(), (v) => (v.completed ? 'watched' : 'pending'));
   return {
-    pending: list.filter((v) => !v.completed),
-    watched: list.filter((v) => v.completed),
+    pending: groups.pending ?? [],
+    watched: groups.watched ?? [],
   };
 }
 
@@ -407,7 +389,7 @@ async function closePlayer() {
  * A single dropped video starts playing immediately, per the app's core UX.
  */
 async function addHandles(fileHandles, directoryHandles) {
-  let added = [];
+  const added = [];
   let firstRecord = null;
 
   for (const handle of fileHandles) {
@@ -465,7 +447,7 @@ function bindDragAndDrop() {
   const overlay = $('#drop-overlay');
   let depth = 0;
 
-  const isFileDrag = (e) => Array.from(e.dataTransfer?.types || []).includes('Files');
+  const isFileDrag = (e) => e.dataTransfer?.types.includes('Files') ?? false;
 
   window.addEventListener('dragenter', (e) => {
     if (!isFileDrag(e)) return;
@@ -533,16 +515,6 @@ function bindToolbar() {
   $('#watched-toggle').addEventListener('click', toggleWatchedSection);
 
   $('#btn-clear').addEventListener('click', onClearLibrary);
-  $('#btn-help').addEventListener('click', showShortcuts);
-  $('#shortcuts-close').addEventListener('click', closeModals);
-  $('#modal-backdrop').addEventListener('click', closeModals);
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && state.modalOpen) {
-      e.preventDefault();
-      closeModals();
-    }
-  });
 }
 
 function checkSupport() {
@@ -568,6 +540,7 @@ function checkSupport() {
 
 async function main() {
   checkSupport();
+  buildShortcuts();
   await db.requestPersistentStorage();
 
   initPwa({ onToast: (message, options) => toast(message, options) });
@@ -577,7 +550,10 @@ async function main() {
     onNext: () => playNeighbour(1),
     onPrev: () => playNeighbour(-1),
     onEnded: () => {},
-    onShowShortcuts: showShortcuts,
+    onShowShortcuts: () => {
+      const dialog = $('#shortcuts-modal');
+      if (!dialog.open) dialog.showModal(); // `?` repeats while it is up
+    },
     onToast: (message) => toast(message, { duration: 1500 }),
     onProgress: (updated) => {
       const index = state.videos.findIndex((v) => v.id === updated.id);
@@ -590,7 +566,7 @@ async function main() {
         { duration: 8000 }
       );
     },
-    isModalOpen: () => state.modalOpen,
+    isModalOpen: () => Boolean(document.querySelector('dialog[open]')),
   });
   await player.init();
 

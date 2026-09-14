@@ -22,7 +22,7 @@ function openDb() {
   dbPromise = new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
 
-    req.onupgradeneeded = (event) => {
+    req.onupgradeneeded = () => {
       const db = req.result;
 
       if (!db.objectStoreNames.contains(STORE_VIDEOS)) {
@@ -37,7 +37,6 @@ function openDb() {
       if (!db.objectStoreNames.contains(STORE_SETTINGS)) {
         db.createObjectStore(STORE_SETTINGS, { keyPath: 'key' });
       }
-      void event;
     };
 
     req.onsuccess = () => resolve(req.result);
@@ -48,17 +47,15 @@ function openDb() {
   return dbPromise;
 }
 
-function tx(store, mode, fn) {
-  return openDb().then(
-    (db) =>
-      new Promise((resolve, reject) => {
-        const transaction = db.transaction(store, mode);
-        const req = fn(transaction.objectStore(store));
-        transaction.oncomplete = () => resolve(req ? req.result : undefined);
-        transaction.onerror = () => reject(transaction.error);
-        transaction.onabort = () => reject(transaction.error);
-      })
-  );
+async function tx(store, mode, fn) {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(store, mode);
+    const req = fn(transaction.objectStore(store));
+    transaction.oncomplete = () => resolve(req ? req.result : undefined);
+    transaction.onerror = () => reject(transaction.error);
+    transaction.onabort = () => reject(transaction.error);
+  });
 }
 
 /**

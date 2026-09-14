@@ -257,7 +257,6 @@ export class Player {
     $('#btn-back').addEventListener('click', () => this.cb.onClose?.());
     $('#btn-mute').addEventListener('click', () => this.toggleMute());
     $('#btn-fullscreen').addEventListener('click', () => this.toggleFullscreen());
-    $('#btn-shortcuts').addEventListener('click', () => this.cb.onShowShortcuts?.());
     $('#btn-next').addEventListener('click', () => this.cb.onNext?.());
     $('#btn-prev').addEventListener('click', () => this.cb.onPrev?.());
 
@@ -267,20 +266,14 @@ export class Player {
       this.video.volume = value;
     });
 
+    // Opening and light-dismissing the menu is the popover's job; this only
+    // has to act on a choice.
     const speedMenu = $('#speed-menu');
-    $('#btn-speed').addEventListener('click', (e) => {
-      e.stopPropagation();
-      speedMenu.hidden = !speedMenu.hidden;
-    });
     speedMenu.addEventListener('click', (e) => {
       const rate = e.target.dataset?.rate;
       if (!rate) return;
       this.setSpeed(Number(rate));
-      speedMenu.hidden = true;
-    });
-
-    document.addEventListener('click', () => {
-      speedMenu.hidden = true;
+      speedMenu.hidePopover();
     });
 
     document.addEventListener('fullscreenchange', () => {
@@ -353,11 +346,7 @@ export class Player {
     if (!this.previewVideo.src || this.previewVideo.readyState < 1) return;
 
     await new Promise((resolve) => {
-      const onSeeked = () => {
-        this.previewVideo.removeEventListener('seeked', onSeeked);
-        resolve();
-      };
-      this.previewVideo.addEventListener('seeked', onSeeked);
+      this.previewVideo.addEventListener('seeked', resolve, { once: true });
       this.previewVideo.currentTime = time;
     });
 
@@ -500,9 +489,12 @@ export class Player {
   #flashIcon(kind, label = '') {
     this.flash.dataset.kind = kind;
     this.flash.querySelector('.flash-label').textContent = label;
-    this.flash.classList.remove('animate');
-    void this.flash.offsetWidth; // restart the animation
     this.flash.classList.add('animate');
+    // Replay from the top when a second flash lands mid-animation.
+    for (const animation of this.flash.getAnimations()) {
+      animation.cancel();
+      animation.play();
+    }
   }
 
   /* -------------------------------------------------------------- chrome */
@@ -522,7 +514,7 @@ export class Player {
     this.idleTimer = setTimeout(() => {
       if (!this.video.paused && !this.scrubbing) {
         this.root.classList.add('controls-hidden');
-        $('#speed-menu').hidden = true;
+        $('#speed-menu').togglePopover(false); // may already be closed
       }
     }, CONTROLS_IDLE_MS);
   }
@@ -572,32 +564,54 @@ export class Player {
   }
 
   #handleKey(e) {
-    const key = e.key;
-
-    if (key === ' ') return this.togglePlay(), true;
-    // Shift turns the arrow keys into a coarse jump, for skipping intros and
-    // the like without leaving the keyboard.
-    const step = e.shiftKey ? SEEK_STEP_LARGE : SEEK_STEP;
-    if (key === 'ArrowLeft') return this.seekBy(-step), true;
-    if (key === 'ArrowRight') return this.seekBy(step), true;
-    if (key === 'ArrowUp') return this.adjustVolume(0.05), true;
-    if (key === 'ArrowDown') return this.adjustVolume(-0.05), true;
-    if (key === 'm' || key === 'M') return this.toggleMute(), true;
-    if (key === 'f' || key === 'F') return this.toggleFullscreen(), true;
     // Speed stepping keys off `e.code` as well as `e.key`: on non-US layouts
     // Shift+, / Shift+. do not produce `<` / `>`.
     if (e.shiftKey) {
-      if (key === '<' || e.code === 'Comma') return this.stepSpeed(-1), true;
-      if (key === '>' || e.code === 'Period') return this.stepSpeed(1), true;
+      if (e.key === '<' || e.code === 'Comma') {
+        this.stepSpeed(-1);
+        return true;
+      }
+      if (e.key === '>' || e.code === 'Period') {
+        this.stepSpeed(1);
+        return true;
+      }
     }
 
-    if (key === 'Escape') {
-      if (document.fullscreenElement) return false; // browser exits fullscreen itself
-      this.cb.onClose?.();
-      return true;
-    }
+    // Shift turns the arrow keys into a coarse jump, for skipping intros and
+    // the like without leaving the keyboard.
+    const step = e.shiftKey ? SEEK_STEP_LARGE : SEEK_STEP;
 
-    return false;
+    switch (e.key) {
+      case ' ':
+        this.togglePlay();
+        return true;
+      case 'ArrowLeft':
+        this.seekBy(-step);
+        return true;
+      case 'ArrowRight':
+        this.seekBy(step);
+        return true;
+      case 'ArrowUp':
+        this.adjustVolume(0.05);
+        return true;
+      case 'ArrowDown':
+        this.adjustVolume(-0.05);
+        return true;
+      case 'm':
+      case 'M':
+        this.toggleMute();
+        return true;
+      case 'f':
+      case 'F':
+        this.toggleFullscreen();
+        return true;
+      case 'Escape':
+        if (document.fullscreenElement) return false; // browser exits fullscreen itself
+        this.cb.onClose?.();
+        return true;
+      default:
+        return false;
+    }
   }
 }
 

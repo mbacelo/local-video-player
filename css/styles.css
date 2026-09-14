@@ -420,12 +420,15 @@ main { padding: 24px; }
 
 /* ----------------------------------------------------------- popup menus */
 
-.menu-anchor { position: relative; }
+#btn-speed { anchor-name: --speed-anchor; }
 
 .popup-menu {
-  position: absolute;
-  right: 0;
-  bottom: 46px;
+  position: fixed;
+  position-anchor: --speed-anchor;
+  inset: auto;
+  right: anchor(right);
+  bottom: calc(anchor(top) + 8px);
+  margin: 0;
   min-width: 180px;
   padding: 6px;
   border: 1px solid var(--border);
@@ -505,33 +508,24 @@ main { padding: 24px; }
 .drop-card h2 { margin: 8px 0 4px; }
 .drop-card p { margin: 0; color: var(--text-dim); }
 
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 70;
-  background: rgba(0, 0, 0, 0.65);
-}
-
 .modal {
-  position: fixed;
-  z-index: 71;
-  top: 50%; left: 50%;
-  translate: -50% -50%;
-  width: min(460px, calc(100vw - 40px));
-  max-height: calc(100vh - 80px);
+  width: min(460px, calc(100dvw - 40px));
+  max-height: calc(100dvh - 80px);
   overflow: auto;
   padding: 24px;
   border: 1px solid var(--border);
   border-radius: 14px;
   background: var(--bg-elevated);
+  color: var(--text);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
 }
-.modal-wide { width: min(760px, calc(100vw - 40px)); }
+.modal::backdrop { background: rgba(0, 0, 0, 0.65); }
+.modal-wide { width: min(760px, calc(100dvw - 40px)); }
 .modal h2 { margin: 0 0 10px; font-size: 18px; }
 .modal p { color: var(--text-dim); }
 .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
 .modal-header h2 { margin: 0; }
-.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin: 22px 0 0; }
 
 .shortcuts-body {
   display: grid;

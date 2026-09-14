@@ -35,7 +35,8 @@
       <button id="btn-add-files" class="btn">Add videos</button>
       <button id="btn-add-folder" class="btn">Add folder</button>
       <button id="btn-clear" class="btn btn-quiet">Clear library</button>
-      <button id="btn-help" class="btn btn-icon" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+      <button class="btn btn-icon" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts"
+              command="show-modal" commandfor="shortcuts-modal">?</button>
     </div>
   </header>
 
@@ -126,22 +127,22 @@
 
       <div class="spacer"></div>
 
-      <div class="menu-anchor">
-        <button id="btn-speed" class="btn-ghost btn-text" title="Playback speed (Shift + , and Shift + .)">1×</button>
-        <div id="speed-menu" class="popup-menu" hidden>
-          <div class="popup-title">Speed</div>
-          <button data-rate="0.25">0.25×</button>
-          <button data-rate="0.5">0.5×</button>
-          <button data-rate="0.75">0.75×</button>
-          <button data-rate="1" class="active">Normal</button>
-          <button data-rate="1.25">1.25×</button>
-          <button data-rate="1.5">1.5×</button>
-          <button data-rate="1.75">1.75×</button>
-          <button data-rate="2">2×</button>
-        </div>
+      <button id="btn-speed" class="btn-ghost btn-text" popovertarget="speed-menu"
+              title="Playback speed (Shift + , and Shift + .)">1×</button>
+      <div id="speed-menu" class="popup-menu" popover>
+        <div class="popup-title">Speed</div>
+        <button data-rate="0.25">0.25×</button>
+        <button data-rate="0.5">0.5×</button>
+        <button data-rate="0.75">0.75×</button>
+        <button data-rate="1" class="active">Normal</button>
+        <button data-rate="1.25">1.25×</button>
+        <button data-rate="1.5">1.5×</button>
+        <button data-rate="1.75">1.75×</button>
+        <button data-rate="2">2×</button>
       </div>
 
-      <button id="btn-shortcuts" class="btn-ghost btn-text" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+      <button class="btn-ghost btn-text" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts"
+              command="show-modal" commandfor="shortcuts-modal">?</button>
       <button id="btn-fullscreen" class="btn-ghost" title="Fullscreen (f)" aria-label="Fullscreen">⛶</button>
     </div>
   </div>
@@ -158,24 +159,22 @@
   </div>
 </div>
 
-<div id="modal-backdrop" class="modal-backdrop" hidden></div>
-
-<div id="confirm-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title" hidden>
+<dialog id="confirm-modal" class="modal" closedby="any" aria-labelledby="confirm-title">
   <h2 id="confirm-title"></h2>
   <p id="confirm-body"></p>
-  <div class="modal-actions">
-    <button id="confirm-cancel" class="btn btn-quiet">Cancel</button>
-    <button id="confirm-ok" class="btn">Confirm</button>
-  </div>
-</div>
+  <form method="dialog" class="modal-actions">
+    <button value="cancel" class="btn btn-quiet">Cancel</button>
+    <button id="confirm-ok" value="confirm" class="btn">Confirm</button>
+  </form>
+</dialog>
 
-<div id="shortcuts-modal" class="modal modal-wide" role="dialog" aria-modal="true" aria-labelledby="shortcuts-title" hidden>
+<dialog id="shortcuts-modal" class="modal modal-wide" closedby="any" aria-labelledby="shortcuts-title">
   <div class="modal-header">
     <h2 id="shortcuts-title">Keyboard shortcuts</h2>
-    <button id="shortcuts-close" class="btn-ghost" aria-label="Close">×</button>
+    <button class="btn-ghost" aria-label="Close" command="close" commandfor="shortcuts-modal">×</button>
   </div>
   <div id="shortcuts-body" class="shortcuts-body"></div>
-</div>
+</dialog>
 
 <div id="toast-container" class="toast-container"></div>
 

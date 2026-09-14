@@ -9,7 +9,7 @@
  * activate and clients are told to reload.
  */
 
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const CACHE_NAME = `local-video-player-${CACHE_VERSION}`;
 
 const SHELL = [
@@ -30,15 +30,14 @@ const SHELL = [
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) =>
+    (async () => {
+      const cache = await caches.open(CACHE_NAME);
       // addAll is all-or-nothing; a single 404 would leave the app with no
       // cache at all, so failures are tolerated per-file.
-      Promise.all(
-        SHELL.map((url) =>
-          cache.add(new Request(url, { cache: 'reload' })).catch(() => {})
-        )
-      )
-    )
+      await Promise.allSettled(
+        SHELL.map((url) => cache.add(new Request(url, { cache: 'reload' })))
+      );
+    })()
   );
 });
 

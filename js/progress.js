@@ -24,7 +24,7 @@ const MIN_INTERVAL = 0.25;
 export function mergeIntervals(intervals, duration = Infinity) {
   const cleaned = [];
 
-  for (const item of intervals || []) {
+  for (const item of intervals ?? []) {
     if (!item) continue;
     let [start, end] = item;
     if (!Number.isFinite(start) || !Number.isFinite(end)) continue;
@@ -40,7 +40,7 @@ export function mergeIntervals(intervals, duration = Infinity) {
 
   const merged = [cleaned[0]];
   for (let i = 1; i < cleaned.length; i += 1) {
-    const last = merged[merged.length - 1];
+    const last = merged.at(-1);
     const next = cleaned[i];
     if (next[0] - last[1] <= MERGE_GAP) {
       last[1] = Math.max(last[1], next[1]);
@@ -53,7 +53,7 @@ export function mergeIntervals(intervals, duration = Infinity) {
 
 /** Total seconds covered by a set of merged ranges. */
 export function watchedSeconds(intervals) {
-  return (intervals || []).reduce((sum, [start, end]) => sum + (end - start), 0);
+  return (intervals ?? []).reduce((sum, [start, end]) => sum + (end - start), 0);
 }
 
 /** Fraction of the video watched, 0..1. */
@@ -160,7 +160,7 @@ export class WatchTracker {
   /** Merged ranges including whatever run is currently open. */
   snapshot() {
     if (this.runStart === null || this.runEnd - this.runStart < MIN_INTERVAL) {
-      return this.intervals.map((r) => [r[0], r[1]]);
+      return this.intervals.map(([start, end]) => [start, end]);
     }
     return mergeIntervals(
       [...this.intervals, [this.runStart, this.runEnd]],

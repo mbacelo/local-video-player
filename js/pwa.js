@@ -40,11 +40,8 @@ function watchForUpdate(registration, onToast) {
     });
   });
 
-  let reloading = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (reloading) return;
-    reloading = true;
-    location.reload();
+  navigator.serviceWorker.addEventListener('controllerchange', () => location.reload(), {
+    once: true,
   });
 }
 

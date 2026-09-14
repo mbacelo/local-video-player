@@ -96,33 +96,42 @@ export async function fileFor(video, { prompt = true } = {}) {
  * Runs off-document so it never disturbs the visible player.
  */
 export function extractPoster(file) {
-  return new Promise((resolve) => {
-    const url = URL.createObjectURL(file);
-    const video = document.createElement('video');
-    video.preload = 'metadata';
-    video.muted = true;
-    video.playsInline = true;
+  const { promise, resolve } = Promise.withResolvers();
+  const url = URL.createObjectURL(file);
+  const video = document.createElement('video');
+  video.preload = 'metadata';
+  video.muted = true;
+  video.playsInline = true;
 
-    let settled = false;
-    const finish = (result) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      video.removeAttribute('src');
-      video.load();
-      URL.revokeObjectURL(url);
-      resolve(result);
-    };
+  // Aborting the controller both settles the call once and tears down every
+  // listener below in one go.
+  const controller = new AbortController();
+  const { signal } = controller;
+  const finish = (result) => {
+    if (signal.aborted) return;
+    controller.abort();
+    video.removeAttribute('src');
+    video.load();
+    URL.revokeObjectURL(url);
+    resolve(result);
+  };
 
-    // Some files decode metadata but never deliver a frame; don't hang the queue.
-    const timer = setTimeout(() => finish(null), 15000);
+  // Some files decode metadata but never deliver a frame; don't hang the queue.
+  const timer = setTimeout(() => finish(null), 15000);
+  signal.addEventListener('abort', () => clearTimeout(timer));
 
-    video.onloadedmetadata = () => {
+  video.addEventListener(
+    'loadedmetadata',
+    () => {
       const duration = Number.isFinite(video.duration) ? video.duration : 0;
       video.currentTime = Math.min(3, duration * 0.1) || 0;
-    };
+    },
+    { signal }
+  );
 
-    video.onseeked = () => {
+  video.addEventListener(
+    'seeked',
+    () => {
       const width = video.videoWidth;
       const height = video.videoHeight;
       if (!width || !height) {
@@ -141,16 +150,15 @@ export function extractPoster(file) {
         width,
         height,
       };
-      canvas.toBlob(
-        (blob) => finish({ ...meta, poster: blob }),
-        'image/jpeg',
-        0.8
-      );
-    };
+      canvas.toBlob((blob) => finish({ ...meta, poster: blob }), 'image/jpeg', 0.8);
+    },
+    { signal }
+  );
 
-    video.onerror = () => finish(null);
-    video.src = url;
-  });
+  video.addEventListener('error', () => finish(null), { signal });
+  video.src = url;
+
+  return promise;
 }
 
 /* ------------------------------------------------------------------ adding */
@@ -294,11 +302,9 @@ export async function handlesFromDrop(dataTransfer) {
   const files = [];
   const directories = [];
 
-  const items = Array.from(dataTransfer.items || []).filter((i) => i.kind === 'file');
+  const items = Array.from(dataTransfer.items ?? []).filter((i) => i.kind === 'file');
   const handles = await Promise.all(
-    items.map((item) =>
-      item.getAsFileSystemHandle ? item.getAsFileSystemHandle().catch(() => null) : null
-    )
+    items.map((item) => item.getAsFileSystemHandle?.().catch(() => null) ?? null)
   );
 
   for (const handle of handles) {
